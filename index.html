@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#111827">
+<link rel="manifest" href="./manifest.json">
+<title>حاسبة الدولار والعراقي والذيل</title>
+<style>
+*{box-sizing:border-box}body{margin:0;font-family:Arial,sans-serif;background:#f3f4f6;color:#111827;padding:18px}
+.box{max-width:540px;margin:auto;background:#fff;border-radius:20px;padding:20px;box-shadow:0 8px 30px #0001}
+h1{text-align:center;margin:0 0 14px}.card{background:#f9fafb;border-radius:14px;padding:15px;margin:12px 0}
+h2{font-size:18px;margin:0 0 10px}label{display:block;font-weight:bold;margin:10px 0 6px}
+input,select,button{width:100%;padding:13px;border-radius:10px;font-size:16px}
+input,select{border:1px solid #d1d5db;background:white}button{border:0;background:#111827;color:white;font-weight:bold;margin-top:10px;cursor:pointer}
+.rate{display:grid;grid-template-columns:1fr 1fr;gap:10px}.result{margin-top:15px;background:#ecfdf5;border-radius:14px;padding:18px;text-align:center;font-size:21px}
+.small{text-align:center;color:#6b7280;font-size:13px;margin-top:12px}
+</style>
+</head>
+<body>
+<div class="box">
+<h1>حاسبة التحويل</h1>
+
+<div class="card">
+<h2>⚙️ أسعار الصرف</h2>
+<div class="rate">
+<div><label>سعر 1 دولار بالدينار</label><input id="usdRate" type="number" value="1600" min="0" step="any"></div>
+<div><label>عدد الذيل مقابل 1000 د.ع</label><input id="tailRate" type="number" value="1100" min="0" step="any"></div>
+</div>
+<button onclick="saveRates()">حفظ الأسعار</button>
+</div>
+
+<div class="card">
+<h2>💱 التحويل</h2>
+<label>نوع التحويل</label>
+<select id="type">
+<option value="usd_iqd">دولار → عراقي</option>
+<option value="iqd_usd">عراقي → دولار</option>
+<option value="tail_iqd">ذيل → عراقي</option>
+<option value="iqd_tail">عراقي → ذيل</option>
+<option value="usd_tail">دولار → ذيل</option>
+<option value="tail_usd">ذيل → دولار</option>
+</select>
+<label>المبلغ</label>
+<input id="amount" type="number" inputmode="decimal" placeholder="اكتب المبلغ" step="any">
+<button onclick="calc()">احسب</button>
+<div id="result" class="result">أدخل المبلغ واضغط «احسب»</div>
+</div>
+
+<div class="card">
+<h2>📈 حساب الربح</h2>
+<label>سعر الذيل الناتج من التحويل</label>
+<input id="sellBase" type="number" inputmode="decimal" placeholder="مثلاً 1760" step="any">
+<label>نسبة ربحك %</label>
+<input id="profitPct" type="number" inputmode="decimal" value="10" min="0" step="any">
+<button onclick="calcProfit()">احسب سعر البيع</button>
+<div id="profitResult" class="result">أدخل سعر الذيل ونسبة الربح</div>
+</div>
+<div class="small">الأسعار محفوظة على هذا الجهاز حتى تغيّرها مرة ثانية.</div>
+</div>
+
+<script>
+const usdInput=document.getElementById('usdRate'), tailInput=document.getElementById('tailRate');
+usdInput.value=localStorage.usdRate||1600;
+tailInput.value=localStorage.tailRate||1100;
+
+function saveRates(){
+  localStorage.usdRate=usdInput.value;
+  localStorage.tailRate=tailInput.value;
+  calc();
+  alert('تم حفظ أسعار الصرف ✅');
+}
+function fmt(n){return new Intl.NumberFormat('en-US',{maximumFractionDigits:2}).format(n)}
+function calc(){
+  const a=Number(document.getElementById('amount').value), t=document.getElementById('type').value;
+  const u=Number(usdInput.value), tr=Number(tailInput.value), r=document.getElementById('result');
+  if(!Number.isFinite(a)||a<0||u<=0||tr<=0){r.textContent='تأكد من إدخال الأسعار والمبلغ بشكل صحيح';return}
+  let out,unit;
+  if(t==='usd_iqd'){out=a*u;unit='د.ع'}
+  if(t==='iqd_usd'){out=a/u;unit='$'}
+  if(t==='tail_iqd'){out=a*1000/tr;unit='د.ع'}
+  if(t==='iqd_tail'){out=a*tr/1000;unit='ذيل'}
+  if(t==='usd_tail'){out=a*u*tr/1000;unit='ذيل'}
+  if(t==='tail_usd'){out=a/(u*tr/1000);unit='$'}
+  r.innerHTML='<strong>'+fmt(out)+' '+unit+'</strong>';
+}
+
+function calcProfit(){
+  const base=Number(document.getElementById('sellBase').value);
+  const pct=Number(document.getElementById('profitPct').value);
+  const r=document.getElementById('profitResult');
+  if(!Number.isFinite(base)||base<0||!Number.isFinite(pct)||pct<0){
+    r.textContent='تأكد من إدخال السعر ونسبة الربح بشكل صحيح'; return;
+  }
+  const profit=base*pct/100;
+  const sell=base+profit;
+  r.innerHTML='<strong>سعر البيع: '+fmt(sell)+' ذيل</strong><br>الربح: '+fmt(profit)+' ذيل';
+}
+</script>
+<script>
+if ("serviceWorker" in navigator) {
+  window.addEventListener("load", () => navigator.serviceWorker.register("./service-worker.js"));
+}
+</script>
+</body>
+</html>
